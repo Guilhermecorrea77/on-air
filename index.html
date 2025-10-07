@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ON AIR (Texto Editável)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --glow-color: #ff0000;
+            --neon-intensity: 10;
+            --font-color: #f0f0f0;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            color: #fff;
+            overflow: hidden;
+            font-family: 'Oswald', sans-serif;
+        }
+
+        .on-air-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        #on-air-text {
+            font-size: 15vw;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--font-color);
+            text-shadow: 
+                0 0 5px #fff, 
+                0 0 10px #fff, 
+                0 0 calc(var(--neon-intensity) * 2px) var(--glow-color), 
+                0 0 calc(var(--neon-intensity) * 4px) var(--glow-color), 
+                0 0 calc(var(--neon-intensity) * 6px) var(--glow-color);
+            animation: glow-pulse 1.5s infinite alternate;
+            /* Adiciona uma transição suave para a mudança do tamanho da fonte */
+            transition: font-size 0.4s ease-in-out;
+        }
+
+        #on-air-text.no-neon { text-shadow: none; }
+        #on-air-text.no-pulse { animation: none; }
+
+        @keyframes glow-pulse {
+            from { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 calc(var(--neon-intensity) * 2px) var(--glow-color), 0 0 calc(var(--neon-intensity) * 4px) var(--glow-color), 0 0 calc(var(--neon-intensity) * 6px) var(--glow-color); }
+            to { text-shadow: 0 0 10px #fff, 0 0 15px #fff, 0 0 calc(var(--neon-intensity) * 3px) var(--glow-color), 0 0 calc(var(--neon-intensity) * 5px) var(--glow-color), 0 0 calc(var(--neon-intensity) * 7px) var(--glow-color); }
+        }
+
+        /* --- Estilos da Legenda --- */
+        #legend { position: fixed; bottom: 20px; right: 20px; background-color: rgba(30, 30, 30, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 8px; padding: 10px 20px; font-family: 'Roboto', sans-serif; color: #f0f0f0; border: 1px solid rgba(255, 255, 255, 0.1); max-width: 250px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); transition: all 0.3s ease-in-out; }
+        #legend h3 { margin: 0 0 10px 0; padding: 5px 0; cursor: pointer; font-size: 16px; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+        #legend h3 .toggle-icon::before { content: '[ − ]'; font-weight: bold; }
+        #legend ul { list-style: none; padding: 0; margin: 0; overflow: hidden; max-height: 300px; transition: max-height 0.3s ease-in-out, margin-top 0.3s ease-in-out; }
+        #legend li { margin-bottom: 8px; font-size: 14px; }
+        #legend li code { display: inline-block; background-color: rgba(0, 0, 0, 0.3); padding: 2px 6px; border-radius: 4px; font-weight: bold; min-width: 20px; text-align: center; }
+        #legend.collapsed h3 { margin-bottom: 0; }
+        #legend.collapsed ul { max-height: 0; margin-top: 0; }
+        #legend.collapsed h3 .toggle-icon::before { content: '[ + ]'; }
+    </style>
+</head>
+<body>
+
+    <div class="on-air-container" id="on-air-screen">
+        <h1 id="on-air-text">ON AIR</h1>
+    </div>
+
+    <div id="legend">
+        <h3 id="legend-title">
+            <span>Controles</span>
+            <span class="toggle-icon"></span>
+        </h3>
+        <ul id="legend-list">
+            <li><code>T</code>: Trocar Texto</li>
+            <li><code>←</code>/<code>→</code>: Cor da Fonte</li>
+            <li><code>C</code>: Cor do Neon</li>
+            <li><code>P</code>: Pausar Pulso</li>
+            <li><code>N</code>: Ligar/Desligar Neon</li>
+            <li><code>+</code>/<code>-</code>: Intensidade do Neon</li>
+            <li><code>↑</code>/<code>↓</code>: Brilho da Tela</li>
+            <li><code>L</code>: Esconder Legenda</li>
+            <li><code>ESC</code>: Sair da Tela</li>
+        </ul>
+    </div>
+
+    <script>
+        const onAirScreen = document.getElementById('on-air-screen');
+        const onAirText = document.getElementById('on-air-text');
+        const legend = document.getElementById('legend');
+        const legendTitle = document.getElementById('legend-title');
+
+        let currentOpacity = 1.0;
+        let neonIntensity = 10;
+        const glowColors = ['#ff0000', '#007bff', '#00ff00', '#ff00ff', '#f9d900'];
+        let glowColorIndex = 0;
+        const fontColors = ['#f0f0f0', '#ff0000', '#007bff', '#00ff00', '#ff00ff', '#f9d900'];
+        let fontColorIndex = 0;
+
+        function toggleLegend() { legend.classList.toggle('collapsed'); }
+        legendTitle.addEventListener('click', toggleLegend);
+
+        document.addEventListener('keydown', function(event) {
+            const key = event.key.toLowerCase();
+
+            // Evita que os atalhos funcionem enquanto um campo de texto estiver ativo (como o prompt)
+            if (event.target !== document.body) return;
+
+            switch (key) {
+                case 'escape': if (onAirScreen) onAirScreen.style.display = 'none'; break;
+                case 'n': onAirText.classList.toggle('no-neon'); break;
+                case 'p': onAirText.classList.toggle('no-pulse'); break;
+                case 'l': toggleLegend(); break;
+                case 'c':
+                    glowColorIndex = (glowColorIndex + 1) % glowColors.length;
+                    document.documentElement.style.setProperty('--glow-color', glowColors[glowColorIndex]);
+                    break;
+                case 'arrowdown':
+                    currentOpacity = Math.max(0.1, currentOpacity - 0.1);
+                    onAirScreen.style.opacity = currentOpacity.toFixed(1);
+                    break;
+                case 'arrowup':
+                    currentOpacity = Math.min(1.0, currentOpacity + 0.1);
+                    onAirScreen.style.opacity = currentOpacity.toFixed(1);
+                    break;
+                case '-':
+                    neonIntensity = Math.max(1, neonIntensity - 1);
+                    onAirText.style.setProperty('--neon-intensity', neonIntensity);
+                    break;
+                case '=': case '+':
+                    neonIntensity = Math.min(20, neonIntensity + 1);
+                    onAirText.style.setProperty('--neon-intensity', neonIntensity);
+                    break;
+                case 'arrowright':
+                    fontColorIndex = (fontColorIndex + 1) % fontColors.length;
+                    onAirText.style.setProperty('--font-color', fontColors[fontColorIndex]);
+                    break;
+                case 'arrowleft':
+                    fontColorIndex = (fontColorIndex - 1 + fontColors.length) % fontColors.length;
+                    onAirText.style.setProperty('--font-color', fontColors[fontColorIndex]);
+                    break;
+                
+                // --- Nova lógica para trocar o texto ---
+                case 't':
+                    const currentText = onAirText.textContent;
+                    const newText = prompt("Digite o novo texto:", currentText);
+
+                    // Verifica se o usuário não cancelou ou deixou o texto em branco
+                    if (newText !== null && newText.trim() !== '') {
+                        onAirText.textContent = newText.trim();
+
+                        // Ajusta o tamanho da fonte com base no comprimento do texto
+                        if (newText.length > 15) {
+                            onAirText.style.fontSize = '8vw';
+                        } else if (newText.length > 8) {
+                            onAirText.style.fontSize = '12vw';
+                        } else {
+                            onAirText.style.fontSize = '15vw';
+                        }
+                    }
+                    break;
+            }
+        });
+    </script>
+
+</body>
+</html>
